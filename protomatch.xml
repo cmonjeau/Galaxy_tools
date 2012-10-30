@@ -1,0 +1,92 @@
+<tool id="protomatch_wrapper" name="Protomatch" version="2.0">
+  <description>Pattern matching for protein sequences</description>
+
+<command>
+
+protomatch --proto-input $input_proto
+#if $save_matched_seq:
+--save-matched-sequences $match_sequences_output
+#end if
+#if str( $options_type.options_type_selector ) == "basic":
+--scan-sequences $input_seq
+#else
+--scan-sequences $options_type.database
+#end if
+ --scan-output $tsv_output --min-sequence-score $score_threshold 
+#if $model_match:
+--allow-partial-model-match
+#end if
+#if str( $options_sequence_length.options_sequence_length_selector ) == "True":
+--min-sequence-length $options_sequence_length.min_sequence_length --max-sequence-length $options_sequence_length.max_sequence_length
+#end if
+#if $exception_handling:
+ --exceptions-as-gaps
+#end if
+
+</command>
+
+
+<inputs>
+      <param name="input_proto" format="proto" type="data" label="Select a protomaton file" help="Select an already generated protomaton file" />
+      <conditional name="options_type">
+      	<param name="options_type_selector" type="select" label="Input sequence or Databank">
+        	<option value="basic" selected="True">Input sequence</option>
+       	 	<option value="advanced">Public databank</option>
+     	</param>
+      	<when value="basic">
+      	        <param name="input_seq" format="fasta" type="data" label="Input sequence" help="FASTA format" />
+      	</when>
+      	<when value="advanced">
+		<param name="database" type="select" label="Database">
+                <options from_file ="biomaj_bd.loc">
+                	<column name="name" index="2"/>
+			<column name="value" index="3"/>
+          	</options>
+      		</param>
+     	</when>
+      </conditional>
+      <param name="save_matched_seq" type="boolean" label="Save_matched_sequences" checked="True" value="True"/>
+      <param name="score_threshold" type="integer" value="0" label="Score threshold" help="The results will only contain the sequences with a score higher than this value (scores can be negative)." />
+      <param name="model_match" type="boolean" label="Allow partial model match" checked="False" value="False" help="Search for sequences matching only a part of the protomaton"/>
+      <conditional name="options_sequence_length">
+      	<param name="options_sequence_length_selector" type="select" label="Sequence length filter" checked="False" value="False">
+		<option value="False" selected="True">Filter disabled</option>
+       	 	<option value="True">Filter enabled</option>
+     	</param>
+      	<when value="False">
+		<!-- -->
+      	</when>
+      	<when value="True">
+		<param name="min_sequence_length" type="integer" value="0" label="Scan only sequence with a length higher than" />
+		<param name="max_sequence_length" type="integer" value="1000" label="and lower than " />
+     	</when>
+      </conditional>
+      <param name="exception_handling" type="boolean" label="Exceptions handling" checked="False" value="False" help="Handle exceptions as gaps"/>
+</inputs>
+<outputs>
+    <data format="fasta" name="match_sequences_output" label="match_sequences : ${tool.name} on ${on_string}">
+	<filter>save_matched_seq</filter>
+    </data>
+    <data format="tsv" name="tsv_output" label="results : ${tool.name} on ${on_string}"></data>
+</outputs>
+
+
+<help>
+**What it does**
+
+ProtoMatch is a software tool for integrating and analyzing fixed-location and movement eye gaze and cursor data. It provides a comprehensive collection of protocol analysis tools that support sequential data analyses for eye fixations and scanpaths as well as for cursor fixations (dwells at one location) and cursorpaths (movements between locations). ProtoMatch is modularized software that integrates both eye gaze and cursor protocols into a unified stream of data and provides an assortment of filters and analyses. ProtoMatch subsumes basic analyses (i.e., fixation duration, number of fixations, etc.) and introduces a method of objectively computing the similarity between scanpaths or cursorpaths using sequence alignment. The combination of filters, basic analyses, and sequence alignment in ProtoMatch provides researchers with a versatile system for performing both confirmatory and exploratory sequential data analyses (Sanderson and Fisher, 1994).
+
+--------
+
+**References:**
+
+`ProtoMatch: a tool for analyzing high-density, sequential eye gaze and cursor protocols. &lt;http://www.ncbi.nlm.nih.gov/pubmed/16171198&gt;`_ .
+
+--------
+
+**Integrated by:**
+
+Cyril Monjeaud
+
+</help>
+</tool>

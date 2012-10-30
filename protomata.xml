@@ -1,0 +1,164 @@
+<tool id="protomata_wrapper" name="Protomata learner" version="2.0">
+  <description>Motif discovery for protein sequences</description>
+
+<command>
+##redundant test
+#if str( $redundant ) != "none":
+
+	cd-hit -i $input_seq -o $input2_seq -c $redundant;
+	dialign -nta -thr $significativity -lmax $max_fragment_size -afc -fn /opt/galaxy-dist/database/tmp/my_afc_file $input2_seq;
+	cat -A /opt/galaxy-dist/database/tmp/my_afc_file.afc &gt;$afc_output;
+	paloma --training-sequences-input $input2_seq --threshold $significativity --min-size 1 --max-size $max_fragment_size --$consensus --plma-output $plma_output --use-afc $afc_output;
+	plma2dot -i $plma_output -o $dot_output;
+
+#else:
+	dialign -nta -thr $significativity -lmax $max_fragment_size -afc -fn /opt/galaxy-dist/database/tmp/my_afc_file $input_seq;
+	cat -A /opt/galaxy-dist/database/tmp/my_afc_file.afc &gt;$afc_output;
+	paloma --training-sequences-input $input_seq --threshold $significativity --min-size 1 --max-size $max_fragment_size --$consensus --plma-output $plma_output --use-afc $afc_output;
+plma2dot -i $plma_output -o $dot_output;
+
+#end if
+
+	protobuild --plma-input $plma_output --proto-output $proto_output --plma-dot-output $plma_dot_output --proto-dot-output $proto_dot_output
+#if str( $weight_sequences ) == "weight-sequences":
+--weight-sequences
+#end if
+--percentage-quorum $quorum_value --pseudocounts Dirichlet --components $indices;
+
+
+dot -o $dot_output_png -Tpng $dot_output;
+dot -o $plma_dot_output_png -Tpng $plma_dot_output;
+dot -o $proto_dot_output_png -Tpng $proto_dot_output;
+
+dot -o $dot_output_svg -Tsvg $dot_output;
+dot -o $plma_dot_output_svg -Tsvg $plma_dot_output;
+dot -o $proto_dot_output_svg -Tsvg $proto_dot_output;
+
+sh /home/genouest/admin/galaxy/dependencies/protomata/proto2logojpg.sh $proto_output /opt/galaxy-dist/database/tmp/proto.jpg;
+mv /opt/galaxy-dist/database/tmp/proto.jpg $proto_logo_output;
+
+rm -f /opt/galaxy-dist/database/tmp/my_afc_file.afc;
+
+
+
+</command>
+
+<inputs>
+      <param name="input_seq" format="fasta" type="data" label="Input sequence" help="FASTA format" />
+      <param name="redundant" type="select" format="text" label="Remove redundant sequences" help="Maximum percentage of identity allowed between sequences.">
+	<label>Output format</label>
+	<option value="none">No redundancy reduction</option>
+	<option value="0.9">90%</option>
+        <option value="0.8">80%</option>
+	<option value="0.7">70%</option>
+      </param>
+      <param name="significativity" type="float" value="5.0" label="Significativity of fragment similarity" help="Minimal significativity."/>
+      <param name="consensus" type="select" format="text">
+        <label>Consensus</label>
+	<option value="weak-consensus">Weak</option>
+        <option value="strong-consensus">Strong</option>
+      </param>
+      <param name="max_fragment_size" type="integer" value="15" label="Maximum fragments size" />
+      <param name="quorum_value" type="integer" value="50" label="Quorum value" help="The quorum is the minimal sequences weight in a block required to keep it.
+It can be expressed as a percentage of the total sequences weight, or directly as the minimal sum of sequences weights.
+A protomaton will be generated for this value."/>      
+      <param name="weight_sequences" type="select" format="text" help="If yes, each sequence have a weight representing how unique it is in the set. Otherwise, each sequence have a fixed weight of 1.">
+        <label>Weight sequences</label>
+	<option value="weight-sequences">yes</option>
+        <option value="">no</option>
+     </param>
+      <param name="indices" type="select" label="Pseudocounts">
+          <options from_file ="protomata_index.loc">
+                <column name="name" index="1"/>
+		<column name="value" index="3"/>
+          </options>
+      </param>
+      <!--facultatives options -->
+      <conditional name="options_type">
+      	<param name="options_type_selector" type="select" label="Basic or Advanced options">
+        	<option value="basic" selected="True">Basic</option>
+       	 	<option value="advanced">Advanced</option>
+     	</param>
+      	<when value="basic">
+      	  <!-- -->
+      	</when>
+      	<when value="advanced">
+		<param name="generate_png" type="boolean" label="Generate PNG images" checked="True" value="True"/>
+		<param name="generate_svg" type="boolean" label="Generate SVG images" value="False" />
+     	</when>
+      </conditional>
+</inputs>
+<outputs>
+    <data format="fasta" name="input2_seq">
+	<filter>redundant != "none"</filter>
+    </data>
+
+    <data format="xml" name="protobuild_plma_output" hidden="False" label="${tool.name} : protobuild_align.plma (${input_seq.name})"></data>
+    <data format="xml" name="plma_output" hidden="False" label="${tool.name} : protomata_align.plma (${input_seq.name})"></data>
+    <data format="txt" name="afc_output" hidden="True" label="${tool.name} : dialign_result.afc (${input_seq.name})" ></data>
+    <data format="dot" name="dot_output" hidden="True" label="${tool.name} : align.dot (${input_seq.name})" ></data>
+    <data format="proto" name="proto_output" label="${tool.name} : align_proto.proto (${input_seq.name})"></data>
+    <data format="dot" name="plma_dot_output" hidden="True" label="${tool.name} : align_plma.dot (${input_seq.name})" ></data>
+    <data format="dot" name="proto_dot_output" hidden="True" label="${tool.name} : align_proto.dot (${input_seq.name})" ></data>
+    <data format="png" name="dot_output_png" label="${tool.name} : align_dot.png (${input_seq.name})" >
+	<filter>options_type['options_type_selector'] == "basic" or (options_type['options_type_selector'] == "advanced" and options_type['generate_png'])</filter>
+    </data>
+    <data format="png" name="plma_dot_output_png" label="${tool.name} : align_plma_dot.png (${input_seq.name})" >
+	<filter>options_type['options_type_selector'] == "basic" or (options_type['options_type_selector'] == "advanced" and options_type['generate_png'])</filter>
+    </data>
+    <data format="png" name="proto_dot_output_png" label="${tool.name} : align_proto_dot.png (${input_seq.name})" >
+	<filter>options_type['options_type_selector'] == "basic" or (options_type['options_type_selector'] == "advanced" and options_type['generate_png'])</filter>
+    </data>
+    <data format="svg" name="dot_output_svg" label="${tool.name} : align_dot.svg (${input_seq.name})" >
+	<filter>options_type['options_type_selector'] == "advanced" and options_type['generate_svg']</filter>
+    </data>
+    <data format="svg" name="plma_dot_output_svg" label="${tool.name} : align_plma_dot.svg (${input_seq.name})" >
+	<filter>options_type['options_type_selector'] == "advanced" and options_type['generate_svg']</filter>
+    </data>
+    <data format="svg" name="proto_dot_output_svg" label="${tool.name} : align_proto_dot.svg (${input_seq.name})" >
+	<filter>options_type['options_type_selector'] == "advanced" and options_type['generate_svg']</filter>
+    </data>
+    <data format="jpg" name="proto_logo_output" label="${tool.name} : align_proto_jpg.jpg (${input_seq.name})" />
+
+
+</outputs>
+
+<help>
+**What it does**
+
+Given a sample of (unaligned) sequences belonging to a structural or functional family of proteins, Protomata infers automata characterizing the family. Automata are graphical models representing a (potentially infinite) set of sequences. They can be used to get new insights into the family, when classical multiple sequence alignments are insufficient, or to search for new family members in the sequence data banks, with the advantage of a finer level of expressivity than classical sequence patterns (such as PSSM, Profile HMM, or Prosite Patterns) enabling to model heterogeneous sequence families.
+
+--------
+
+**References:**
+
+`Learning Automata on Protein Sequences, François Coste and Goulven Kerbellec, JOBIM 2006 &lt;http://www.irisa.fr/symbiose/old/people/coste/pub/coste_kerbellec_jobim06.pdf&gt;`_ .
+
+`A Similar Fragments Merging Approach to Learn Automata on Proteins, François Coste and Goulven Kerbellec, ECML 2005 &lt;http://dx.doi.org/10.1007/11564096_50&gt;`_ . 
+
+--------
+
+**Contributors:**
+
+François Coste
+
+Andres Burgos
+
+Anthony Bretaudeau
+
+Laetitia Guillot
+
+Thi Hong Hanh Hoang
+
+Boris Idmont
+
+Goulven Kerbellec
+
+--------
+
+Thanks also to the authors of Dialign2, GABIOS, ZGRviewer and Graphviz programs or packages.
+
+
+</help>
+
+</tool>

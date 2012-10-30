@@ -1,0 +1,125 @@
+<tool id="logol_wrapper" name="Logol">
+  <description>Biological patterns matching</description>
+
+<command interpreter="bash">
+
+logol.sh -sge
+#if str( $options_input.options_input_selector ) == "model":
+-m $input_model
+#else
+-g $input_grammar
+#end if
+-$type
+#if str( $options_type.options_type_selector ) == "personal":
+-s $input_fasta
+#else
+-s $options_type.db
+#end if
+-out $match -max $max
+#if $fasta:
+-fasta
+#end if
+#if $gff:
+-gff
+#end if
+#if $search_sequence:
+-all
+#end if
+#if $max_size_match:
+-maxmatchsize $max_size_match
+#end if
+#if $max_size_spacer:
+-maxspacer $max_size_spacer
+#end if
+#if $max_size_word:
+-lmax $max_size_word
+#end if
+#if $min_size_word:
+-lmin $min_size_word
+#end if
+#if $forcesplit:
+-forcesplit
+#end if
+
+</command>
+
+<inputs>
+	<conditional name="options_input">
+      	<param name="options_input_selector" type="select" label="Logol pattern type">
+        	<option value="model" selected="True">Logol pattern model</option>
+       	 	<option value="grammar">Logol pattern grammar</option>
+     	</param>
+      	<when value="model">
+      	 	<param name="input_model" type="data" format="lgd" label="Logol pattern model" help="Pattern model designed by LogolDesigner" />
+      	</when>
+      	<when value="grammar">
+		<param name="input_grammar" type="data" format="logol" label="Logol pattern grammar" help="Logol Grammar file" />	
+     	</when>
+      </conditional>
+
+     <param name="type" type="select" format="text">
+		<label>Type of personal data file</label>
+		<option value="dna">DNA</option>
+		<option value="rna">RNA</option>
+		<option value="protein">PROTEIN</option>
+      </param>
+
+	<conditional name="options_type">
+      	<param name="options_type_selector" type="select" label="Target sequence(s) to analyse">
+        	<option value="personal" selected="True">Personal fasta sequence</option>
+       	 	<option value="database">Database</option>
+     	</param>
+      	<when value="personal">
+      	 	
+		<param name="input_fasta" type="data" format="fasta" label="Read from file" help="Fasta sequence to analyse" />
+      	</when>
+      	<when value="database">
+		<param name="db" type="select" label="Database">
+          		<options from_file ="biomaj_bd.loc">
+            			<column name="name" index="1"/>
+				<column name="value" index="3"/>
+          		</options>
+     		</param>	
+     	</when>
+      </conditional>
+
+	<param name="max" type="integer" value="100" label="Maximum number of result matches"/>
+	<param name="fasta" type="boolean" label="Add fasta conversion to result archive" checked="False" value="False"/>
+	<param name="gff" type="boolean" label="Add gff conversion to result archive" checked="False" value="False"/>
+	<param name="search_sequence" type="boolean" label="Search sequence in both directions" checked="False" value="False"/>
+	<param name="max_size_match" type="integer" optional="True" label="Maximum size of a match"/>
+	<param name="max_size_spacer" type="integer" optional="True" label="Maximum size of a spacer"/>
+	<param name="max_size_word" type="integer" optional="True" label="Maximum size of a word"/>
+	<param name="min_size_word" type="integer" optional="True" label="Minimum size of a word"/>
+
+	<param name="forcesplit" type="boolean" label="Allow sequence cut (if several models are defined in rule, all models will look for pattern in same sequence range" checked="False" value="False"/>
+
+</inputs>
+<outputs>
+
+    <data format="zip" name="match" label="match : ${tool.name} on ${on_string}" />
+    
+</outputs>
+
+<help>
+
+**References:**
+
+`Graphical online designer and analyser for Logol models. &lt;http://webapps.genouest.org/LogolDesigner&gt;`_ .
+
+`Logol tutorials. &lt;http://training.genouest.org/claroline/claroline/course/index.php?cid=LOGOL&gt;`_ .
+
+--------
+
+**Author:**
+
+Olivier Sallou
+
+--------
+
+**Integrated by:**
+
+Cyril Monjeaud
+
+</help>
+</tool>
